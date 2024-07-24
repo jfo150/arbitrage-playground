@@ -5,9 +5,7 @@ import numpy as np
 import pickle
 import requests
 from sklearn.preprocessing import MinMaxScaler
-
 import xgboost as xgb
-st.write(f"XGBoost version: {xgb.__version__}")
 
 st.title("Arbitrage Playground")
 st.write(
@@ -63,6 +61,7 @@ def preprocess_data(df):
     consolidated.drop('value', axis=1, inplace=True)
     
     consolidated['time'] = pd.to_datetime(consolidated['timeStamp'], unit='s')
+    consolidated.set_index('time', inplace=True)
     
     # calc additional features
     consolidated['gas_price'] = pd.to_numeric(consolidated['gasPrice']) / 1e9  # Convert to Gwei
@@ -70,16 +69,23 @@ def preprocess_data(df):
     consolidated['price_ratio'] = consolidated['WETH_value'] / consolidated['USDC_value']
     consolidated['log_price_ratio'] = np.log(consolidated['price_ratio'])
     
-    # lag features
-    for i in range(1, 6):  # Create 5 lag features
-        consolidated[f'WETH_value_lag_{i}'] = consolidated['WETH_value'].shift(i)
-        consolidated[f'USDC_value_lag_{i}'] = consolidated['USDC_value'].shift(i)
+    # Assuming we have eth_price_usd column, if not, you might need to fetch it separately
+    consolidated['eth_price_usd'] = consolidated['USDC_value'] / consolidated['WETH_value']
+    consolidated['total_gas_fees_usd'] = consolidated['total_gas_cost'] * consolidated['eth_price_usd'] / 1e9
+
+    # Create lag features
+    for i in range(1, 10):  # 9 lags
+        consolidated[f'lag_{i}'] = consolidated['total_gas_fees_usd'].shift(i)
+    
+    # Create rolling means
+    consolidated['rolling_mean_3'] = consolidated['total_gas_fees_usd'].rolling(window=3).mean()
+    consolidated['rolling_mean_6'] = consolidated['total_gas_fees_usd'].rolling(window=6).mean()
     
     consolidated = consolidated.dropna()
     
     return consolidated
 
-# load pre-trained model (and scaler??)
+# load pre-trained model
 @st.cache_resource
 def load_model(model_name):
     models_dir = os.path.join(os.getcwd(), 'models')
@@ -96,6 +102,14 @@ def load_model(model_name):
     try:
         with open(model_path, 'rb') as f:
             model = pickle.load(f)
+        
+        if hasattr(model, 'feature_names_'):
+            st.write(f"Model expects these features: {model.feature_names_}")
+        elif hasattr(model, 'feature_name_'):
+            st.write(f"Model expects these features: {model.feature_name_}")
+        else:
+            st.write("Could not determine expected features from the model.")
+        
         st.success(f"Model {model_name} loaded successfully")
         return model
     except Exception as e:
@@ -119,7 +133,7 @@ selected_model = st.sidebar.selectbox(
 # display the selected model
 st.sidebar.write(f"You selected: {selected_model}")
 
-# API key input ??
+# API key input
 api_key = st.sidebar.text_input("Etherscan API Key", "YOUR_API_KEY_HERE")
 address = st.sidebar.text_input("Contract Address", "0x7bea39867e4169dbe237d55c8242a8f2fcdcc387")
 
@@ -147,9 +161,17 @@ if st.sidebar.button("Run Simulation"):
         else:
             try:
                 # model data prep
-                feature_columns = ['WETH_value', 'USDC_value', 'gas_price', 'total_gas_cost', 'price_ratio',
-                                   'WETH_value_lag_1', 'WETH_value_lag_2', 'WETH_value_lag_3', 'WETH_value_lag_4', 'WETH_value_lag_5']
-                X = processed_df[feature_columns].values
+                feature_columns = [
+                    'lag_1', 'lag_2', 'lag_3', 'lag_4', 'lag_5', 'lag_6', 'lag_7', 'lag_8', 'lag_9',
+                    'rolling_mean_3', 'rolling_mean_6'
+                ]
+                
+                if all(feature in processed_df.columns for feature in feature_columns):
+                    X = processed_df[feature_columns].values
+                else:
+                    missing_features = [f for f in feature_columns if f not in processed_df.columns]
+                    st.error(f"Missing features in processed data: {missing_features}")
+                    st.stop()
                 
                 # make preds
                 with st.spinner("Running simulation..."):
@@ -157,8 +179,8 @@ if st.sidebar.button("Run Simulation"):
                     if predictions.ndim > 1:
                         predictions = predictions.flatten()
                 
-                actual = processed_df['WETH_value'].values
-                time_series = processed_df['time']
+                actual = processed_df['total_gas_fees_usd'].values
+                time_series = processed_df.index
                 
                 # plot preds vs actual
                 chart_data = pd.DataFrame({
