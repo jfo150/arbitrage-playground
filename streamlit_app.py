@@ -89,7 +89,6 @@ def load_model(model_name):
 st.sidebar.header("Model Selection")
 
 models = [
-    "Basic Arbitrage Model",
     "LSTM",
     "LGBM",
     "XGB"
@@ -131,21 +130,7 @@ if st.sidebar.button("Run Simulation"):
         else:
             try:
                 # model data prep
-                if selected_model == "LSTM":
-                    scaler = MinMaxScaler()
-                    scaled_data = scaler.fit_transform(processed_df[['WETH_value', 'USDC_value']])
-                else:
-                    scaled_data = processed_df[['WETH_value', 'USDC_value']].values
-                
-                # sequences (for LSTM)
-                if selected_model == "LSTM":
-                    seq_length = 60
-                    X = []
-                    for i in range(len(scaled_data) - seq_length):
-                        X.append(scaled_data[i:i+seq_length])
-                    X = np.array(X)
-                else:
-                    X = scaled_data
+                X = processed_df[['WETH_value', 'USDC_value']].values
                 
                 # make preds
                 with st.spinner("Running simulation..."):
@@ -153,13 +138,8 @@ if st.sidebar.button("Run Simulation"):
                     if predictions.ndim > 1:
                         predictions = predictions.flatten()
                 
-                if selected_model == "LSTM":
-                    actual = processed_df['WETH_value'].values[seq_length:]
-                    time_series = processed_df['time'][seq_length:]
-                else:
-                    actual = processed_df['WETH_value'].values
-                    time_series = processed_df['time']
-                
+                actual = processed_df['WETH_value'].values
+                time_series = processed_df['time']
                 # plot preds vs actual
                 chart_data = pd.DataFrame({
                     'Time': time_series,
@@ -167,7 +147,7 @@ if st.sidebar.button("Run Simulation"):
                     'Predicted': predictions
                 })
                 st.line_chart(chart_data.set_index('Time'))
-                
+                    
                 # calc metrics
                 mse = np.mean((actual - predictions)**2)
                 rmse = np.sqrt(mse)
