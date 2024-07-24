@@ -74,9 +74,13 @@ def load_model(model_name):
         st.error(f"Model file not found: {model_path}")
         return None
     
-    with open(model_path, 'rb') as f:
-        model = pickle.load(f)
-    return model
+    try:
+        with open(model_path, 'rb') as f:
+            model = pickle.load(f)
+        return model
+    except Exception as e:
+        st.error(f"Error loading model: {str(e)}")
+        return None
 
 # Sidebar
 st.sidebar.header("Model Selection")
