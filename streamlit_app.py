@@ -79,6 +79,20 @@ def preprocess_data(df):
     consolidated.drop('value', axis=1, inplace=True)
     
     consolidated['time'] = pd.to_datetime(consolidated['timeStamp'], unit='s')
+    
+    # calc additional features
+    consolidated['gas_price'] = pd.to_numeric(consolidated['gasPrice']) / 1e9  # Convert to Gwei
+    consolidated['total_gas_cost'] = consolidated['gas_price'] * pd.to_numeric(consolidated['gasUsed'])
+    consolidated['price_ratio'] = consolidated['WETH_value'] / consolidated['USDC_value']
+    consolidated['log_price_ratio'] = np.log(consolidated['price_ratio'])
+    
+    # lag features
+    for i in range(1, 6):  # Create 5 lag features
+        consolidated[f'WETH_value_lag_{i}'] = consolidated['WETH_value'].shift(i)
+        consolidated[f'USDC_value_lag_{i}'] = consolidated['USDC_value'].shift(i)
+    
+    consolidated = consolidated.dropna()
+    
     return consolidated
 
 # load pre-trained model (and scaler??)
@@ -149,7 +163,9 @@ if st.sidebar.button("Run Simulation"):
         else:
             try:
                 # model data prep
-                X = processed_df[['WETH_value', 'USDC_value']].values
+                feature_columns = ['WETH_value', 'USDC_value', 'gas_price', 'total_gas_cost', 'price_ratio',
+                                   'WETH_value_lag_1', 'WETH_value_lag_2', 'WETH_value_lag_3', 'WETH_value_lag_4', 'WETH_value_lag_5']
+                X = processed_df[feature_columns].values
                 
                 # make preds
                 with st.spinner("Running simulation..."):
@@ -159,6 +175,7 @@ if st.sidebar.button("Run Simulation"):
                 
                 actual = processed_df['WETH_value'].values
                 time_series = processed_df['time']
+                
                 # plot preds vs actual
                 chart_data = pd.DataFrame({
                     'Time': time_series,
@@ -166,7 +183,7 @@ if st.sidebar.button("Run Simulation"):
                     'Predicted': predictions
                 })
                 st.line_chart(chart_data.set_index('Time'))
-                    
+                
                 # calc metrics
                 mse = np.mean((actual - predictions)**2)
                 rmse = np.sqrt(mse)
@@ -178,6 +195,7 @@ if st.sidebar.button("Run Simulation"):
                 st.write(f"Mean Absolute Error: {mae:.4f}")
             except Exception as e:
                 st.error(f"An error occurred during simulation: {str(e)}")
+                st.write("Error details:", e)
 
 else:
     st.write("Click 'Run Simulation' to start.")
