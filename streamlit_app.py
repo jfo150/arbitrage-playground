@@ -91,7 +91,7 @@ models = [
     "Basic Arbitrage Model",
     "LSTM",
     "LGBM",
-    "XGBoost"
+    "XGB"
 ]
 
 selected_model = st.sidebar.selectbox(
