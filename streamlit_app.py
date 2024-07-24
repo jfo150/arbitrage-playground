@@ -2,13 +2,27 @@ import streamlit as st
 import os
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import pickle
 import requests
 from sklearn.preprocessing import MinMaxScaler
-import joblib
-import xgboost as xgb
-import lightgbm as lgbm
+
+
+st.write(f"Current directory: {os.getcwd()}")
+st.write(f"Contents of current directory: {os.listdir()}")
+
+try:
+    import xgboost as xgb
+    st.write("XGBoost successfully imported")
+except ImportError:
+    st.write("Failed to import XGBoost")
+    xgb = None
+
+try:
+    import lightgbm as lgb
+    st.write("LightGBM successfully imported")
+except ImportError:
+    st.write("Failed to import LightGBM")
+    lgb = None
 
 
 st.title("Arbitrage Playground")
@@ -70,8 +84,12 @@ def preprocess_data(df):
 # load pre-trained model (and scaler??)
 @st.cache_resource
 def load_model(model_name):
-    models_dir = os.path.join(os.path.dirname(__file__), 'models')
+    models_dir = os.path.join(os.getcwd(), 'models')
+    st.write(f"Looking for models in: {models_dir}")
+    st.write(f"Contents of models directory: {os.listdir(models_dir) if os.path.exists(models_dir) else 'Directory not found'}")
+    
     model_path = os.path.join(models_dir, f'{model_name}_final.pkl')
+    st.write(f"Attempting to load model from: {model_path}")
     
     if not os.path.exists(model_path):
         st.error(f"Model file not found: {model_path}")
@@ -80,6 +98,7 @@ def load_model(model_name):
     try:
         with open(model_path, 'rb') as f:
             model = pickle.load(f)
+        st.success(f"Model {model_name} loaded successfully")
         return model
     except Exception as e:
         st.error(f"Error loading model: {str(e)}")
