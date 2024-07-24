@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.title("🎈 My new app")
+st.title("Cross-LP Arbitrage Playground")
 st.write(
-    "Let's start building! For help and inspiration, head over to [docs.streamlit.io](https://docs.streamlit.io/)."
+    "Use this app to experiment with different cross-liquidity pool arbitrage scenarios. Select a model and click run to simulate performance."
 )
