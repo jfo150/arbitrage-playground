@@ -7,23 +7,6 @@ import requests
 from sklearn.preprocessing import MinMaxScaler
 
 
-st.write(f"Current directory: {os.getcwd()}")
-st.write(f"Contents of current directory: {os.listdir()}")
-
-try:
-    import xgboost as xgb
-    st.write("XGBoost successfully imported")
-except ImportError:
-    st.write("Failed to import XGBoost")
-    xgb = None
-
-try:
-    import lightgbm as lgb
-    st.write("LightGBM successfully imported")
-except ImportError:
-    st.write("Failed to import LightGBM")
-    lgb = None
-
 
 st.title("Arbitrage Playground")
 st.write(
