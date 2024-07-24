@@ -6,4 +6,4 @@ scikit-learn
 joblib
 requests
 lightgbm
-xgboost
+xgboost==1.0.2
