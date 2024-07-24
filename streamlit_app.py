@@ -5,6 +5,7 @@ import numpy as np
 import pickle
 import requests
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import r2_score
 import xgboost as xgb
 
 st.title("Arbitrage Playground")
@@ -193,12 +194,12 @@ if st.sidebar.button("Run Simulation"):
                 # calc metrics
                 mse = np.mean((actual - predictions)**2)
                 rmse = np.sqrt(mse)
-                mae = np.mean(np.abs(actual - predictions))
-                
+                r2 = r2_score(actual, predictions)
+
                 st.subheader("Model Performance Metrics")
-                st.write(f"Mean Squared Error: {mse:.4f}")
                 st.write(f"Root Mean Squared Error: {rmse:.4f}")
-                st.write(f"Mean Absolute Error: {mae:.4f}")
+                st.write(f"R²: {r2:.4f}")
+
             except Exception as e:
                 st.error(f"An error occurred during simulation: {str(e)}")
                 st.write("Error details:", e)
