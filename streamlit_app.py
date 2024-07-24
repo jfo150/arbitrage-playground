@@ -141,13 +141,12 @@ if st.sidebar.button("Run Simulation"):
                 predictions = model.predict(X)
             
             if selected_model == "LSTM":
-                predictions = scaler.inverse_transform(np.column_stack((predictions, np.zeros_like(predictions))))[:, 0]
                 actual = processed_df['WETH_value'].values[seq_length:]
                 time_series = processed_df['time'][seq_length:]
             else:
-                predictions = scaler.inverse_transform(np.column_stack((predictions, np.zeros_like(predictions))))[:, 0]
                 actual = processed_df['WETH_value'].values
                 time_series = processed_df['time']
+            
             
             # plot preds vs actual
             chart_data = pd.DataFrame({
