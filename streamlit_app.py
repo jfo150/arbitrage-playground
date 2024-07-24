@@ -66,9 +66,21 @@ def preprocess_data(df):
 # load pre-trained model and scaler
 @st.cache_resource
 def load_model_and_scaler(model_name):
-    with open(f'{model_name}_final.pkl', 'rb') as f:
+    models_dir = os.path.join(os.path.dirname(__file__), 'models')
+    model_path = os.path.join(models_dir, f'{model_name}_final.pkl')
+    scaler_path = os.path.join(models_dir, 'scaler.save')
+    
+    if not os.path.exists(model_path):
+        st.error(f"Model file not found: {model_path}")
+        return None, None
+    
+    if not os.path.exists(scaler_path):
+        st.error(f"Scaler file not found: {scaler_path}")
+        return None, None
+    
+    with open(model_path, 'rb') as f:
         model = pickle.load(f)
-    scaler = joblib.load('scaler.save')
+    scaler = joblib.load(scaler_path)
     return model, scaler
 
 # Sidebar
@@ -112,53 +124,56 @@ if st.sidebar.button("Run Simulation"):
         
         # load model and scalar
         model, scaler = load_model_and_scaler(selected_model)
-        
-        # model data prep
-        scaled_data = scaler.transform(processed_df[['WETH_value', 'USDC_value']])
-        
-        # sequences (for LSTM)
-        if selected_model == "LSTM":
-            seq_length = 60
-            X = []
-            for i in range(len(scaled_data) - seq_length):
-                X.append(scaled_data[i:i+seq_length])
-            X = np.array(X)
+        if model is None or scaler is None:
+            st.error("Failed to load model or scaler. Please check the files in the 'models' directory.")
         else:
-            X = scaled_data
         
-        # make preds
-        with st.spinner("Running simulation..."):
-            predictions = model.predict(X)
-        
-        if selected_model == "LSTM":
-            predictions = scaler.inverse_transform(np.column_stack((predictions, np.zeros_like(predictions))))[:, 0]
-            actual = processed_df['WETH_value'].values[seq_length:]
-            time_series = processed_df['time'][seq_length:]
-        else:
-            predictions = scaler.inverse_transform(np.column_stack((predictions, np.zeros_like(predictions))))[:, 0]
-            actual = processed_df['WETH_value'].values
-            time_series = processed_df['time']
-        
-        # plot preds vs actual
-        fig, ax = plt.subplots(figsize=(12, 6))
-        ax.plot(time_series, actual, label='Actual')
-        ax.plot(time_series, predictions, label='Predicted')
-        ax.set_xlabel('Time')
-        ax.set_ylabel('WETH Value')
-        ax.legend()
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-        st.pyplot(fig)
-        
-        # calc metrics
-        mse = np.mean((actual - predictions)**2)
-        rmse = np.sqrt(mse)
-        mae = np.mean(np.abs(actual - predictions))
-        
-        st.subheader("Model Performance Metrics")
-        st.write(f"Mean Squared Error: {mse:.4f}")
-        st.write(f"Root Mean Squared Error: {rmse:.4f}")
-        st.write(f"Mean Absolute Error: {mae:.4f}")
+            # model data prep
+            scaled_data = scaler.transform(processed_df[['WETH_value', 'USDC_value']])
+            
+            # sequences (for LSTM)
+            if selected_model == "LSTM":
+                seq_length = 60
+                X = []
+                for i in range(len(scaled_data) - seq_length):
+                    X.append(scaled_data[i:i+seq_length])
+                X = np.array(X)
+            else:
+                X = scaled_data
+            
+            # make preds
+            with st.spinner("Running simulation..."):
+                predictions = model.predict(X)
+            
+            if selected_model == "LSTM":
+                predictions = scaler.inverse_transform(np.column_stack((predictions, np.zeros_like(predictions))))[:, 0]
+                actual = processed_df['WETH_value'].values[seq_length:]
+                time_series = processed_df['time'][seq_length:]
+            else:
+                predictions = scaler.inverse_transform(np.column_stack((predictions, np.zeros_like(predictions))))[:, 0]
+                actual = processed_df['WETH_value'].values
+                time_series = processed_df['time']
+            
+            # plot preds vs actual
+            fig, ax = plt.subplots(figsize=(12, 6))
+            ax.plot(time_series, actual, label='Actual')
+            ax.plot(time_series, predictions, label='Predicted')
+            ax.set_xlabel('Time')
+            ax.set_ylabel('WETH Value')
+            ax.legend()
+            plt.xticks(rotation=45)
+            plt.tight_layout()
+            st.pyplot(fig)
+            
+            # calc metrics
+            mse = np.mean((actual - predictions)**2)
+            rmse = np.sqrt(mse)
+            mae = np.mean(np.abs(actual - predictions))
+            
+            st.subheader("Model Performance Metrics")
+            st.write(f"Mean Squared Error: {mse:.4f}")
+            st.write(f"Root Mean Squared Error: {rmse:.4f}")
+            st.write(f"Mean Absolute Error: {mae:.4f}")
 
 else:
     st.write("Click 'Run Simulation' to start.")
