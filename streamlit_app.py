@@ -64,25 +64,19 @@ def preprocess_data(df):
     consolidated['time'] = pd.to_datetime(consolidated['timeStamp'], unit='s')
     return consolidated
 
-# load pre-trained model and scaler
+# load pre-trained model (and scaler??)
 @st.cache_resource
-def load_model_and_scaler(model_name):
+def load_model(model_name):
     models_dir = os.path.join(os.path.dirname(__file__), 'models')
     model_path = os.path.join(models_dir, f'{model_name}_final.pkl')
-    scaler_path = os.path.join(models_dir, 'scaler.save')
     
     if not os.path.exists(model_path):
         st.error(f"Model file not found: {model_path}")
-        return None, None
-    
-    if not os.path.exists(scaler_path):
-        st.error(f"Scaler file not found: {scaler_path}")
-        return None, None
+        return None
     
     with open(model_path, 'rb') as f:
         model = pickle.load(f)
-    scaler = joblib.load(scaler_path)
-    return model, scaler
+    return model
 
 # Sidebar
 st.sidebar.header("Model Selection")
@@ -123,10 +117,10 @@ if st.sidebar.button("Run Simulation"):
         st.subheader("Processed Data Preview")
         st.write(processed_df.head())
         
-        # load model and scalar
-        model, scaler = load_model_and_scaler(selected_model)
-        if model is None or scaler is None:
-            st.error("Failed to load model or scaler. Please check the files in the 'models' directory.")
+        # load model
+        model = load_model(selected_model)
+        if model is None:
+            st.error("Failed to load model. Please check the files in the 'models' directory.")
         else:
         
             # model data prep
@@ -156,20 +150,17 @@ if st.sidebar.button("Run Simulation"):
                 time_series = processed_df['time']
             
             # plot preds vs actual
-            fig, ax = plt.subplots(figsize=(12, 6))
-            ax.plot(time_series, actual, label='Actual')
-            ax.plot(time_series, predictions, label='Predicted')
-            ax.set_xlabel('Time')
-            ax.set_ylabel('WETH Value')
-            ax.legend()
-            plt.xticks(rotation=45)
-            plt.tight_layout()
-            st.pyplot(fig)
+            chart_data = pd.DataFrame({
+                'Time': time_series,
+                'Actual': actual,
+                'Predicted': predictions.flatten() 
+            })
+            st.line_chart(chart_data.set_index('Time'))
             
             # calc metrics
-            mse = np.mean((actual - predictions)**2)
+            mse = np.mean((actual - predictions.flatten())**2)
             rmse = np.sqrt(mse)
-            mae = np.mean(np.abs(actual - predictions))
+            mae = np.mean(np.abs(actual - predictions.flatten()))
             
             st.subheader("Model Performance Metrics")
             st.write(f"Mean Squared Error: {mse:.4f}")
