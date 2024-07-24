@@ -6,7 +6,8 @@ import pickle
 import requests
 from sklearn.preprocessing import MinMaxScaler
 
-
+import xgboost as xgb
+st.write(f"XGBoost version: {xgb.__version__}")
 
 st.title("Arbitrage Playground")
 st.write(
