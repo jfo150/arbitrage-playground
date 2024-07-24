@@ -129,49 +129,56 @@ if st.sidebar.button("Run Simulation"):
         if model is None:
             st.error("Failed to load model. Please check the files in the 'models' directory.")
         else:
-        
-            # model data prep
-            scaled_data = scaler.transform(processed_df[['WETH_value', 'USDC_value']])
-            
-            # sequences (for LSTM)
-            if selected_model == "LSTM":
-                seq_length = 60
-                X = []
-                for i in range(len(scaled_data) - seq_length):
-                    X.append(scaled_data[i:i+seq_length])
-                X = np.array(X)
-            else:
-                X = scaled_data
-            
-            # make preds
-            with st.spinner("Running simulation..."):
-                predictions = model.predict(X)
-            
-            if selected_model == "LSTM":
-                actual = processed_df['WETH_value'].values[seq_length:]
-                time_series = processed_df['time'][seq_length:]
-            else:
-                actual = processed_df['WETH_value'].values
-                time_series = processed_df['time']
-            
-            
-            # plot preds vs actual
-            chart_data = pd.DataFrame({
-                'Time': time_series,
-                'Actual': actual,
-                'Predicted': predictions.flatten() 
-            })
-            st.line_chart(chart_data.set_index('Time'))
-            
-            # calc metrics
-            mse = np.mean((actual - predictions.flatten())**2)
-            rmse = np.sqrt(mse)
-            mae = np.mean(np.abs(actual - predictions.flatten()))
-            
-            st.subheader("Model Performance Metrics")
-            st.write(f"Mean Squared Error: {mse:.4f}")
-            st.write(f"Root Mean Squared Error: {rmse:.4f}")
-            st.write(f"Mean Absolute Error: {mae:.4f}")
+            try:
+                # model data prep
+                if selected_model == "LSTM":
+                    scaler = MinMaxScaler()
+                    scaled_data = scaler.fit_transform(processed_df[['WETH_value', 'USDC_value']])
+                else:
+                    scaled_data = processed_df[['WETH_value', 'USDC_value']].values
+                
+                # sequences (for LSTM)
+                if selected_model == "LSTM":
+                    seq_length = 60
+                    X = []
+                    for i in range(len(scaled_data) - seq_length):
+                        X.append(scaled_data[i:i+seq_length])
+                    X = np.array(X)
+                else:
+                    X = scaled_data
+                
+                # make preds
+                with st.spinner("Running simulation..."):
+                    predictions = model.predict(X)
+                    if predictions.ndim > 1:
+                        predictions = predictions.flatten()
+                
+                if selected_model == "LSTM":
+                    actual = processed_df['WETH_value'].values[seq_length:]
+                    time_series = processed_df['time'][seq_length:]
+                else:
+                    actual = processed_df['WETH_value'].values
+                    time_series = processed_df['time']
+                
+                # plot preds vs actual
+                chart_data = pd.DataFrame({
+                    'Time': time_series,
+                    'Actual': actual,
+                    'Predicted': predictions
+                })
+                st.line_chart(chart_data.set_index('Time'))
+                
+                # calc metrics
+                mse = np.mean((actual - predictions)**2)
+                rmse = np.sqrt(mse)
+                mae = np.mean(np.abs(actual - predictions))
+                
+                st.subheader("Model Performance Metrics")
+                st.write(f"Mean Squared Error: {mse:.4f}")
+                st.write(f"Root Mean Squared Error: {rmse:.4f}")
+                st.write(f"Mean Absolute Error: {mae:.4f}")
+            except Exception as e:
+                st.error(f"An error occurred during simulation: {str(e)}")
 
 else:
     st.write("Click 'Run Simulation' to start.")
