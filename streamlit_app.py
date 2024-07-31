@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from sklearn.metrics import mean_squared_error, r2_score
 import xgboost as xgb
-from tensorflow import keras
+import tensorflow as tf
 
 st.title("Arbitrage Playground")
 st.write(
@@ -313,19 +313,18 @@ def shift_column_by_time(df, time_col, value_col, shift_minutes):
 
     return df
 
-# Update the load_model function
+# load model
 @st.cache_resource
 def load_model(model_name):
     models_dir = os.path.join(os.getcwd(), 'models')
-    model_path = os.path.join(models_dir, f'{model_name}_final.pkl')
+    model_path = os.path.join(models_dir, f'{model_name}_final')
     
     if not os.path.exists(model_path):
-        st.error(f"Model file not found: {model_path}")
+        st.error(f"Model directory not found: {model_path}")
         return None
     
     try:
-        with open(model_path, 'rb') as f:
-            model = pickle.load(f)
+        model = tf.keras.models.load_model(model_path)
         st.success(f"Model {model_name} loaded successfully")
         return model
     except Exception as e:
@@ -351,7 +350,11 @@ if st.button("Run Analysis"):
         p0, transactions = etherscan_request('tokentx', api_key, address='0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8')
         p1, transactions1 = etherscan_request('tokentx', api_key, address='0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640')
         
-        both_pools = merge_pool_data(p0, p1)
+        if p0 is None or p1 is None:
+            st.error("Failed to fetch data from Etherscan. Please check your API key and try again.")
+        else:
+            both_pools = merge_pool_data(p0, p1)
+
         
         # LSTM Preprocessing
         dates_test, X_test, y_test = LSTM_preprocessing(both_pools)
@@ -362,13 +365,17 @@ if st.button("Run Analysis"):
         # Run LSTM model
         with st.spinner("Running LSTM model..."):
             LSTM = load_model("LSTM")
-            test_predictions = LSTM.predict(X_test).flatten()
-            mse = mean_squared_error(y_test, test_predictions, squared=False)
-            r2 = r2_score(y_test, test_predictions)
-            
-            st.subheader("LSTM Model Results")
-            st.write(f"Mean Squared Error: {mse:.4f}")
-            st.write(f"R² Score: {r2:.4f}")
+            if LSTM is not None:
+                test_predictions = LSTM.predict(X_test).flatten()
+                mse = mean_squared_error(y_test, test_predictions, squared=False)
+                r2 = r2_score(y_test, test_predictions)
+                
+                st.subheader("LSTM Model Results")
+                st.write(f"Mean Squared Error: {mse:.4f}")
+                st.write(f"R² Score: {r2:.4f}")
+            else:
+                st.error("Failed to load LSTM model. Skipping LSTM analysis.")
+    
         
         # Run XGB model
         with st.spinner("Running XGB model..."):
