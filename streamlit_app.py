@@ -9,10 +9,11 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from sklearn.metrics import mean_squared_error, r2_score
 import xgboost as xgb
+from tensorflow import keras
 
 st.title("Arbitrage Playground")
 st.write(
-    "Use this app to experiment with different cross-liquidity pool arbitrage scenarios in WETH/USDC liquidity pools. Select a model and click run to simulate performance."
+    "Use this app to experiment with different cross-liquidity pool arbitrage scenarios in WETH/USDC liquidity pools. Enter an Etherscan API key and click run to simulate performance."
 )
 
 # fetch data from Etherscan API

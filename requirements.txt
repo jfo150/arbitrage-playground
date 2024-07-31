@@ -7,3 +7,4 @@ requests==2.31.0
 xgboost==2.1.0
 lightgbm==3.3.5
 matplotlib==3.7.1
+tensorflow==2.12.0
