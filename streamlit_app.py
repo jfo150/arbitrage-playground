@@ -388,7 +388,7 @@ if st.button("Run Analysis"):
 
                 # Run LSTM model
                 with st.spinner("Running LSTM model..."):
-                    LSTM = load_model("LSTM_final.pkl")
+                    LSTM = load_model("LSTM_final")
                     if LSTM is not None:
                         try:
                             test_predictions = LSTM.predict(X_test).flatten()
@@ -405,7 +405,7 @@ if st.button("Run Analysis"):
 
                 # Run XGB model
                 with st.spinner("Running XGB model..."):
-                    XGB = load_model("XGB_final.pkl")
+                    XGB = load_model("XGB_final")
                     if XGB is not None:
                         try:
                             X_gas_test_prepared = prepare_data_for_xgb(X_gas_test)
