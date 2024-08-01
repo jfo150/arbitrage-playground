@@ -331,11 +331,6 @@ def load_model(model_name):
         st.error(f"Error loading model: {str(e)}")
         return None
 
-# Main Streamlit app
-st.title("Arbitrage Playground")
-st.write(
-    "Use this app to analyze cross-liquidity pool arbitrage scenarios in WETH/USDC liquidity pools."
-)
 
 # Sidebar
 st.sidebar.header("API Configuration")
