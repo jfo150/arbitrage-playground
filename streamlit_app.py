@@ -333,24 +333,27 @@ def prepare_data_for_xgb(X_gas_test):
 @st.cache_resource
 def load_model(model_name):
     models_dir = os.path.join(os.getcwd(), 'models')
-    model_path = os.path.join(models_dir, f'{model_name}')
+    base_model_path = os.path.join(models_dir, model_name)
     
-    if not os.path.exists(model_path):
-        st.error(f"Model directory not found: {model_path}")
+    # Check for different possible file extensions
+    possible_extensions = ['', '.h5', '.pkl', '.joblib']
+    model_path = next((base_model_path + ext for ext in possible_extensions if os.path.exists(base_model_path + ext)), None)
+    
+    if model_path is None:
+        st.error(f"Model file not found for: {model_name}")
         return None
     
     try:
-        if model_name == "LSTM":
+        if model_name.startswith("LSTM"):
             model = tf.keras.models.load_model(model_path)
         else:
-            with open(model_path + '.pkl', 'rb') as f:
+            with open(model_path, 'rb') as f:
                 model = pickle.load(f)
-        st.success(f"Model {model_name} loaded successfully")
+        st.success(f"Model {model_name} loaded successfully from {model_path}")
         return model
     except Exception as e:
         st.error(f"Error loading model: {str(e)}")
         return None
-
 
 
 # Sidebar
