@@ -333,7 +333,7 @@ def prepare_data_for_xgb(X_gas_test):
 @st.cache_resource
 def load_model(model_name):
     models_dir = os.path.join(os.getcwd(), 'models')
-    model_path = os.path.join(models_dir, f'{model_name}_final')
+    model_path = os.path.join(models_dir, f'{model_name}')
     
     if not os.path.exists(model_path):
         st.error(f"Model directory not found: {model_path}")
@@ -388,7 +388,7 @@ if st.button("Run Analysis"):
 
                 # Run LSTM model
                 with st.spinner("Running LSTM model..."):
-                    LSTM = load_model("LSTM")
+                    LSTM = load_model("LSTM_final.pkl")
                     if LSTM is not None:
                         try:
                             test_predictions = LSTM.predict(X_test).flatten()
@@ -405,7 +405,7 @@ if st.button("Run Analysis"):
 
                 # Run XGB model
                 with st.spinner("Running XGB model..."):
-                    XGB = load_model("XGB")
+                    XGB = load_model("XGB_final.pkl")
                     if XGB is not None:
                         try:
                             X_gas_test_prepared = prepare_data_for_xgb(X_gas_test)
