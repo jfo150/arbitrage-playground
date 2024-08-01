@@ -296,7 +296,7 @@ def load_model(model_name):
         return None
     
     try:
-        if model_name.startswith("LGBM"):
+        if model_name.startswith("LSTM"):
             model = tf.keras.models.load_model(model_path)
         else:
             with open(model_path, 'rb') as f:
@@ -366,16 +366,7 @@ if st.button("Run Analysis"):
                 with st.spinner("Running XGB model..."):
                     XGB = load_model("XGB_Gas_Prices_v2")
                     if XGB is not None:
-                        st.write("XGB Model Feature Names:", XGB.feature_names_)
-                        st.write("XGB Model Number of Features:", XGB.n_features_in_)
                         try:
-                            # Ensure we're using the correct features in the correct order
-                            X_gas_test_ordered = X_gas_test[xgb_feature_names]
-                            
-                            # Add some debugging information
-                            st.write("XGB Feature Names:", xgb_feature_names)
-                            st.write("XGB Input Shape:", X_gas_test_ordered.shape)
-                            
                             y_gas_pred = XGB.predict(X_gas_test_ordered)
                             mse_gas = mean_squared_error(y_gas_test, y_gas_pred, squared=False)
                             r2_gas = r2_score(y_gas_test, y_gas_pred)
@@ -384,7 +375,7 @@ if st.button("Run Analysis"):
                             st.write(f"Mean Squared Error: {mse_gas:.4f}")
                             st.write(f"R² Score: {r2_gas:.4f}")
                             
-                            # Add more debugging information
+                            # debug
                             st.write("Sample of y_gas_test:", y_gas_test.head())
                             st.write("Sample of y_gas_pred:", y_gas_pred[:5])
                         except Exception as e:
