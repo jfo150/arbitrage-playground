@@ -354,7 +354,7 @@ if st.button("Run Analysis"):
                             mse = mean_squared_error(y_pct_test, y_pct_pred, squared=False)
                             r2 = r2_score(y_pct_test, y_pct_pred)
                             
-                            st.subheader("LSTM Model Results")
+                            st.subheader("LGBM Model Results")
                             st.write(f"Mean Squared Error: {mse:.4f}")
                             st.write(f"R² Score: {r2:.4f}")
                         except Exception as e:
@@ -391,7 +391,7 @@ if st.button("Run Analysis"):
                             st.error(f"Error running XGB model: {str(e)}")
                     else:
                         st.error("Failed to load XGB model. Skipping XGB analysis.")
-                        
+
                 # Process final results
                 if y_pct_pred is not None and y_gas_pred is not None:
                     df_final = Final_results_processing(LGBM_org_data['time'],y_pct_test,y_pct_pred,y_gas_test,y_gas_pred)
