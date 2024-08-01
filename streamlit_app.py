@@ -313,24 +313,24 @@ def shift_column_by_time(df, time_col, value_col, shift_minutes):
 
     return df
 
-# load model
+
 @st.cache_resource
 def load_model(model_name):
     models_dir = os.path.join(os.getcwd(), 'models')
-    model_path = os.path.join(models_dir, f'{model_name}_final')
+    model_path = os.path.join(models_dir, f'{model_name}_final.pkl')
     
     if not os.path.exists(model_path):
-        st.error(f"Model directory not found: {model_path}")
+        st.error(f"Model file not found: {model_path}")
         return None
     
     try:
-        model = tf.keras.models.load_model(model_path)
+        with open(model_path, 'rb') as f:
+            model = pickle.load(f)
         st.success(f"Model {model_name} loaded successfully")
         return model
     except Exception as e:
         st.error(f"Error loading model: {str(e)}")
         return None
-
 
 # Sidebar
 st.sidebar.header("API Configuration")
