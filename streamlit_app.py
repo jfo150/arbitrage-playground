@@ -364,83 +364,84 @@ if st.button("Run Analysis"):
         
         if p0 is None or p1 is None:
             st.error("Failed to fetch data from Etherscan. Please check your API key and try again.")
-            return  # Stop execution if data fetch fails
-
-        both_pools = merge_pool_data(p0, p1)
-        
-        # LSTM Preprocessing
-        dates_test, X_test, y_test = LSTM_preprocessing(both_pools)
-        
-        # XGB Preprocessing
-        X_gas_test, y_gas_test = XGB_preprocessing(both_pools)
-        
-        if dates_test is None or X_test is None or y_test is None or X_gas_test is None or y_gas_test is None:
-            st.error("Preprocessing failed. Cannot proceed with analysis.")
-            return
-
-        test_predictions = None
-        y_gas_pred = None
-
-        # Run LSTM model
-        with st.spinner("Running LSTM model..."):
-            LSTM = load_model("LSTM")
-            if LSTM is not None:
-                try:
-                    test_predictions = LSTM.predict(X_test).flatten()
-                    mse = mean_squared_error(y_test, test_predictions, squared=False)
-                    r2 = r2_score(y_test, test_predictions)
-                    
-                    st.subheader("LSTM Model Results")
-                    st.write(f"Mean Squared Error: {mse:.4f}")
-                    st.write(f"R² Score: {r2:.4f}")
-                except Exception as e:
-                    st.error(f"Error running LSTM model: {str(e)}")
-            else:
-                st.error("Failed to load LSTM model. Skipping LSTM analysis.")
-
-        # Run XGB model
-        with st.spinner("Running XGB model..."):
-            XGB = load_model("XGB")
-            if XGB is not None:
-                try:
-                    X_gas_test_prepared = prepare_data_for_xgb(X_gas_test)
-                    if X_gas_test_prepared is not None:
-                        y_gas_pred = XGB.predict(X_gas_test_prepared)
-                        mse_gas = mean_squared_error(y_gas_test, y_gas_pred, squared=False)
-                        r2_gas = r2_score(y_gas_test, y_gas_pred)
-                        
-                        st.subheader("XGB Model Results")
-                        st.write(f"Mean Squared Error: {mse_gas:.4f}")
-                        st.write(f"R² Score: {r2_gas:.4f}")
-                    else:
-                        st.error("Failed to prepare data for XGB model.")
-                except Exception as e:
-                    st.error(f"Error running XGB model: {str(e)}")
-            else:
-                st.error("Failed to load XGB model. Skipping XGB analysis.")
-
-        # Process final results
-        if test_predictions is not None and y_gas_pred is not None:
-            df_final = Final_results_processing(dates_test, y_test, test_predictions, y_gas_test, y_gas_pred)
-            
-            # Display results
-            st.subheader("Arbitrage Opportunities")
-            df_gain = df_final[((df_final['Profit'] > 0) & 
-                                (df_final['min_amount_to_invest_prediction_2'] > 0) & 
-                                (df_final['min_amount_to_invest_prediction_2'] < 5000))]
-            
-            st.write(df_gain)
-            
-            total_gain = df_gain['Profit'].sum()
-            st.write(f"Total Potential Gain: ${total_gain:.2f}")
-            
-            # Plot Net Gain vs. Minimum Amount to Invest
-            st.subheader("Net Gain vs. Minimum Amount to Invest")
-            fig, ax = plt.subplots(figsize=(10, 6))
-            plot_net_gain_vs_threshold(df_final, ax)
-            st.pyplot(fig)
-            
-            # Display current arbitrage opportunity
-            display_current_arbitrage(df_final)
         else:
-            st.error("Cannot proceed with final processing. Some model predictions are missing.")
+            both_pools = merge_pool_data(p0, p1)
+
+       
+        
+            # LSTM Preprocessing
+            dates_test, X_test, y_test = LSTM_preprocessing(both_pools)
+        
+            # XGB Preprocessing
+            X_gas_test, y_gas_test = XGB_preprocessing(both_pools)
+        
+            if dates_test is None or X_test is None or y_test is None or X_gas_test is None or y_gas_test is None:
+                st.error("Preprocessing failed. Cannot proceed with analysis.")
+                return
+
+            test_predictions = None
+            y_gas_pred = None
+
+            # Run LSTM model
+            with st.spinner("Running LSTM model..."):
+                LSTM = load_model("LSTM")
+                if LSTM is not None:
+                    try:
+                        test_predictions = LSTM.predict(X_test).flatten()
+                        mse = mean_squared_error(y_test, test_predictions, squared=False)
+                        r2 = r2_score(y_test, test_predictions)
+                        
+                        st.subheader("LSTM Model Results")
+                        st.write(f"Mean Squared Error: {mse:.4f}")
+                        st.write(f"R² Score: {r2:.4f}")
+                    except Exception as e:
+                        st.error(f"Error running LSTM model: {str(e)}")
+                else:
+                    st.error("Failed to load LSTM model. Skipping LSTM analysis.")
+
+            # Run XGB model
+            with st.spinner("Running XGB model..."):
+                XGB = load_model("XGB")
+                if XGB is not None:
+                    try:
+                        X_gas_test_prepared = prepare_data_for_xgb(X_gas_test)
+                        if X_gas_test_prepared is not None:
+                            y_gas_pred = XGB.predict(X_gas_test_prepared)
+                            mse_gas = mean_squared_error(y_gas_test, y_gas_pred, squared=False)
+                            r2_gas = r2_score(y_gas_test, y_gas_pred)
+                            
+                            st.subheader("XGB Model Results")
+                            st.write(f"Mean Squared Error: {mse_gas:.4f}")
+                            st.write(f"R² Score: {r2_gas:.4f}")
+                        else:
+                            st.error("Failed to prepare data for XGB model.")
+                    except Exception as e:
+                        st.error(f"Error running XGB model: {str(e)}")
+                else:
+                    st.error("Failed to load XGB model. Skipping XGB analysis.")
+
+            # Process final results
+            if test_predictions is not None and y_gas_pred is not None:
+                df_final = Final_results_processing(dates_test, y_test, test_predictions, y_gas_test, y_gas_pred)
+                
+                # Display results
+                st.subheader("Arbitrage Opportunities")
+                df_gain = df_final[((df_final['Profit'] > 0) & 
+                                    (df_final['min_amount_to_invest_prediction_2'] > 0) & 
+                                    (df_final['min_amount_to_invest_prediction_2'] < 5000))]
+                
+                st.write(df_gain)
+                
+                total_gain = df_gain['Profit'].sum()
+                st.write(f"Total Potential Gain: ${total_gain:.2f}")
+                
+                # Plot Net Gain vs. Minimum Amount to Invest
+                st.subheader("Net Gain vs. Minimum Amount to Invest")
+                fig, ax = plt.subplots(figsize=(10, 6))
+                plot_net_gain_vs_threshold(df_final, ax)
+                st.pyplot(fig)
+                
+                # Display current arbitrage opportunity
+                display_current_arbitrage(df_final)
+            else:
+                st.error("Cannot proceed with final processing. Some model predictions are missing.")
